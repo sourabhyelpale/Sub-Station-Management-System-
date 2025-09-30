@@ -15,7 +15,7 @@ const ReportProblem = () => {
       <h3>Report New Problem</h3>
 
       <form onSubmit={handleSubmit}>
-        <label>Problem Type</label>
+        <label>Problem</label>
         <select required>
           <option value="">Select problem type</option>
           <option>Power Outage</option>
