@@ -1,5 +1,6 @@
 import React from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
+import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api"; 
 import "./homePage.css";
 
 const HomePage = () => {
@@ -10,27 +11,32 @@ const HomePage = () => {
     navigate("/login");
   };
 
-  const ReportPage = () => {
-    navigate("/ReportProblem")
-  }
+  const handleReportPage = () => {
+    navigate("/ReportProblem");
+  };
+
+  // Kolhapur district center
+  const kolhapurCenter = { lat: 16.7050, lng: 74.2433 };
 
   return (
     <>
       {/* Header */}
       <div className="header">
         <div className="logo">
-          <div className="logo-icon" ><img src="https://image.winudf.com/v2/image1/Y29tLm1zZWRjbC5hcHBfaWNvbl8xNTU1NTExMjI2XzA4Mg/icon.png?w=312&fakeurl=1" alt="logo" /></div>
+          <div className="logo-icon">
+            <img
+              src="https://image.winudf.com/v2/image1/Y29tLm1zZWRjbC5hcHBfaWNvbl8xNTU1NTExMjI2XzA4Mg/icon.png?w=312&fakeurl=1"
+              alt="logo"
+            />
+          </div>
           <div>
-            <div style={{ fontSize: "18px", fontWeight: 600 }}>
-              MSEDCL
-            </div>
+            <div style={{ fontSize: "18px", fontWeight: 600 }}>MSEDCL</div>
             <div style={{ fontSize: "12px", opacity: 0.8 }}>
               Electricity Problem Tracking System
             </div>
           </div>
         </div>
         <div className="user-info">
-
           <div>
             <div style={{ fontSize: "14px", fontWeight: 500 }}>Admin User</div>
             <div style={{ fontSize: "12px", opacity: 0.8 }}>
@@ -117,39 +123,29 @@ const HomePage = () => {
         {/* Map Section */}
         <div className="map-section">
           <div className="map-header">
-            <div className="map-title">🗺️ Live Problem Map - Kolhapur City</div>
+            <div className="map-title">🗺️ Live Problem Map - Kolhapur District</div>
             <div className="map-controls">
-              <button className="control-button active" onClick={ReportPage}>Report Problem</button>
+              <button className="control-button active" onClick={handleReportPage}>
+                Report Problem
+              </button>
               <button className="control-button refresh-btn">↻ Refresh</button>
               <button className="control-button export-btn">📥 Export Report</button>
             </div>
           </div>
           <div className="map-container">
-            <div className="map-placeholder">
-              <div style={{ fontSize: "24px", marginBottom: "10px" }}>🗺️</div>
-              <div style={{ fontSize: "18px", marginBottom: "10px" }}>
-                Google Maps Integration
-              </div>
-              <div style={{ fontSize: "14px", opacity: 0.8 }}>
-                Interactive map with problem markers will be displayed here
-              </div>
-              <div
-                style={{ fontSize: "12px", marginTop: "20px", opacity: 0.6 }}
+            <LoadScript googleMapsApiKey="AIzaSyABLnG2NhzOeMql5MTI5fBlvSE7rzTox28">
+              <GoogleMap
+                mapContainerStyle={{ height: "500px", width: "100%" }}
+                center={kolhapurCenter}
+                zoom={12}
               >
-                • Red markers for active problems <br />
-                • Green markers for resolved problems <br />
-                • Click markers to view details <br />
-                • Click on map to report new problems
-              </div>
-            </div>
+                {/* Standard Marker */}
+                <Marker position={kolhapurCenter} />
+              </GoogleMap>
+            </LoadScript>
           </div>
         </div>
       </div>
-
-      {/* Toast */}
-      {/* <div className="toast">
-        ✅ Problem resolved successfully in Shivaji Nagar area
-      </div> */}
     </>
   );
 };
