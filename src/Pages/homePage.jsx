@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api"; 
+import { GoogleMap, LoadScript, Marker,Polyline } from "@react-google-maps/api"; 
 import "./homePage.css";
 
 const HomePage = () => {
@@ -16,7 +16,20 @@ const HomePage = () => {
   };
 
   // Kolhapur district center
-  const kolhapurCenter = { lat: 16.7050, lng: 74.2433 };
+   const kolhapurCenter = { lat: 16.7050, lng: 74.2433 };
+  // Inside HomePage component
+const activeIcon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+const resolvedIcon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+
+// Define multiple problem locations
+const problemLocations = [
+  { id: 1, name: "Kolhapur Market Area", lat: 16.7050, lng: 74.2433, status: "Active" },
+  { id: 2, name: "Shivaji Nagar", lat: 16.7120, lng: 74.2500, status: "Active" },
+  { id: 3, name: "Rajarampuri", lat: 16.6980, lng: 74.2400, status: "Resolved" },
+  { id: 4, name: "New Palace Road", lat: 16.6900, lng: 74.2350, status: "Resolved" },
+  { id: 5, name: "Station Road", lat: 16.7150, lng: 74.2550, status: "Active" },
+];
+
 
   return (
     <>
@@ -134,14 +147,39 @@ const HomePage = () => {
           </div>
           <div className="map-container">
             <LoadScript googleMapsApiKey="AIzaSyABLnG2NhzOeMql5MTI5fBlvSE7rzTox28">
-              <GoogleMap
-                mapContainerStyle={{ height: "500px", width: "100%" }}
-                center={kolhapurCenter}
-                zoom={12}
-              >
-                {/* Standard Marker */}
-                <Marker position={kolhapurCenter} />
-              </GoogleMap>
+              
+<GoogleMap
+  mapContainerStyle={{ height: "500px", width: "100%" }}
+  center={kolhapurCenter}
+  zoom={12}
+>
+  {/* Markers */}
+  {problemLocations.map((location) => (
+    <Marker
+      key={location.id}
+      position={{ lat: location.lat, lng: location.lng }}
+      title={`${location.name} - ${location.status}`}
+      icon={location.status === "Active" ? activeIcon : resolvedIcon}
+    />
+  ))}
+
+  {/* Connection Line (Polyline) */}
+  <Polyline
+    path={problemLocations.map((loc) => ({ lat: loc.lat, lng: loc.lng }))}
+    options={{
+      strokeColor: "#FF0000",   // Line color
+      strokeOpacity: 0.8,
+      strokeWeight: 3,
+      clickable: false,
+      draggable: false,
+      editable: false,
+      geodesic: true,
+    }}
+  />
+</GoogleMap>
+
+
+
             </LoadScript>
           </div>
         </div>

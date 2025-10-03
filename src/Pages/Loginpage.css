@@ -7,14 +7,13 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
 }
 
 /* Main container */
 .container {
   width: 350px;
   background: #fff;
-  padding: 30px;
+  padding: 20px;
   border-radius: 15px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   text-align: center;
@@ -25,28 +24,14 @@ body {
   margin-bottom: 30px;
   border-radius: 10px;
   display: contents;
-  text-align: center;
-
-  
- 
 }
-
-.header .underline {
-  width: 50px;
-  height: 3px;
-  background: #2575fc;
-  margin: 8px auto 0 auto;
-  border-radius: 2px;
-}
-
-
 
 .header .text {
-  
+
   font-size: 26px;
   font-weight: 600;
   color: #333;
- 
+  text-align: center;
 }
 
 
@@ -96,10 +81,10 @@ body {
 /* Submit button container */
 .submit-container {
   margin-top: 20px;
-  display:flex;
+  display: flex;
   flex-direction: column;
   gap: 10px;
- 
+
 }
 
 /* Submit button styles */
