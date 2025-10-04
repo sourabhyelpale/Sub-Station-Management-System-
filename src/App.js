@@ -1,18 +1,18 @@
-import { Routes, Route } from "react-router-dom";
-import { Navigate } from "react-router-dom";
-import LoginPage from "./Pages/Loginpage";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import HomePage from "./Pages/homePage";
 import ReportProblem from "./Pages/ReportProblem";
-// import handleSubmit from "./Pages/ReportProblem";
+import LoginPage from "./Pages/Loginpage";
 
 function App() {
   return (
-     <Routes>
-      <Route path="/" element={<Navigate to="/login" />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/home" element={<HomePage />} />
-      <Route path="/ReportProblem" element={<ReportProblem />} />
-    </Routes>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/ReportProblem" element={<ReportProblem />} />
+      </Routes> 
+    </BrowserRouter>
   );
 }
 

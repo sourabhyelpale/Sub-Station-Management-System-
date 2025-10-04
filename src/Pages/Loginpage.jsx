@@ -12,13 +12,24 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
+  // Handle Sign Up
   const handleSignUp = () => {
     if (!username || !email || !password) {
       alert("Please fill all fields");
       return;
     }
-    const userData = { username, email, password };
-    localStorage.setItem("user", JSON.stringify(userData));
+
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+    const exists = users.find((u) => u.email === email);
+
+    if (exists) {
+      alert("User already exists with this email.");
+      return;
+    }
+
+    users.push({ username, email, password });
+    localStorage.setItem("users", JSON.stringify(users));
+
     alert("Sign Up Successful! Please Login.");
     setAction("Login");
     setUsername("");
@@ -26,23 +37,41 @@ const LoginPage = () => {
     setPassword("");
   };
 
+  // Handle Login
   const handleLogin = (e) => {
     e.preventDefault();
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+    const user = users.find((u) => u.email === email && u.password === password);
 
-    // Example check (replace with your actual login logic)
-    if (true) {
-      alert("Successfully login");
-      navigate("/home"); // 👈 redirects to HomePage
+    if (user) {
+      localStorage.setItem("loggedInUser", JSON.stringify(user));
+      alert("Successfully logged in!");
+      navigate("/home");
     } else {
-      alert("Invalid credentials");
+      alert("Invalid credentials. Try again.");
+    }
+  };
+
+  // Handle Forgot Password
+  const handleForgotPassword = () => {
+    if (!email) {
+      alert("Please enter your registered email first.");
+      return;
+    }
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+    const user = users.find((u) => u.email === email);
+
+    if (user) {
+      alert(`Your password is: ${user.password}`);
+    } else {
+      alert("No account found with this email.");
     }
   };
 
   return (
     <div className="container">
-      <div className="header">
+      <div className="header" >
         <div className="text">{action}</div>
-        <div className="underline"></div>
       </div>
 
       <div className="inputs">
@@ -81,7 +110,7 @@ const LoginPage = () => {
 
       {action === "Sign Up" ? null : (
         <div className="forgot-password">
-          Lost Password? <span>Click Here</span>
+          Lost Password? <span onClick={handleForgotPassword}>Click Here</span>
         </div>
       )}
 
