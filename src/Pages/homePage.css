@@ -237,10 +237,10 @@ body {
   margin-right: 10px;
 }
 
-.status-active {
+/* .status-active {
   background: #ff4757;
   animation: pulse 2s infinite;
-}
+} */
 
 .status-resolved {
   background: #2ed573;
@@ -436,10 +436,10 @@ body {
   text-transform: uppercase;
 }
 
-.status-active {
+/* .status-active {
   background: #ffe6e6;
   color: #d63031;
-}
+} */
 
 .status-resolved {
   background: #e6ffe6;

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { GoogleMap, LoadScript, Marker, Polyline } from "@react-google-maps/api";
+import { GoogleMap, LoadScript, Marker, InfoWindow, Polyline } from "@react-google-maps/api";
 import * as XLSX from "xlsx";
+import Papa from "papaparse";
 import "./homePage.css";
 
 const HomePage = () => {
@@ -13,6 +14,9 @@ const HomePage = () => {
   useEffect(() => {
     loadProblems();
   }, [refreshKey]);
+
+  const [selected, setSelected] = useState(null);
+
 
   const loadProblems = () => {
     const storedProblems = JSON.parse(sessionStorage.getItem("problems") || "[]");
@@ -38,6 +42,7 @@ const HomePage = () => {
       alert("⚠️ No data to export!");
       return;
     }
+
 
     // Prepare data for Excel
     const excelData = problems.map((problem, index) => ({
@@ -85,7 +90,7 @@ const HomePage = () => {
 
     // Save file
     XLSX.writeFile(wb, filename);
-    
+
     alert("✅ Excel file downloaded successfully!");
   };
 
@@ -94,14 +99,24 @@ const HomePage = () => {
   const activeIcon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
   const resolvedIcon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
 
-  // Sample problem locations (you can replace with dynamic data)
-  const problemLocations = [
-    { id: 1, name: "Kolhapur Market Area", lat: 16.7050, lng: 74.2433, status: "Active" },
-    { id: 2, name: "Shivaji Nagar", lat: 16.7120, lng: 74.2500, status: "Active" },
-    { id: 3, name: "Rajarampuri", lat: 16.6980, lng: 74.2400, status: "Resolved" },
-    { id: 4, name: "New Palace Road", lat: 16.6900, lng: 74.2350, status: "Resolved" },
-    { id: 5, name: "Station Road", lat: 16.7150, lng: 74.2550, status: "Active" },
-  ];
+  const [problemLocations, setProblemLocations] = useState([]);
+
+  useEffect(() => {
+    // Load CSV from public folder
+    Papa.parse("/data/problemLocations.csv", {
+      download: true,
+      header: true,
+      complete: (result) => {
+        // Convert lat/lng to numbers for map use
+        const formatted = result.data.map((item) => ({
+          ...item,
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lng),
+        }));
+        setProblemLocations(formatted);
+      },
+    });
+  }, []);
 
   // Calculate active problems count
   const activeProblemsCount = problems.filter(p => p.status === "Active").length;
@@ -115,7 +130,7 @@ const HomePage = () => {
     const diffMs = now - reported;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
-    
+
     if (diffMins < 60) return `${diffMins} mins ago`;
     if (diffHours < 24) return `${diffHours} hours ago`;
     return reported.toLocaleDateString();
@@ -178,7 +193,7 @@ const HomePage = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Recent Problems */}
           <div className="recent-problems">
             <div className="section-title">🔄 Recent Problems</div>
@@ -231,17 +246,61 @@ const HomePage = () => {
                 zoom={12}
               >
                 {/* Markers */}
-                {problemLocations.map((location) => (
+                {problemLocations.map((loc) => (
                   <Marker
-                    key={location.id}
-                    position={{ lat: location.lat, lng: location.lng }}
-                    title={`${location.name} - ${location.status}`}
-                    icon={location.status === "Active" ? activeIcon : resolvedIcon}
+                    key={loc.id}
+                    position={{ lat: loc.lat, lng: loc.lng }}
+                    title={loc.name}
+                    onClick={() => setSelected(loc)}
+                    icon={{
+                      url: loc.img,                // Path to your image
+                      scaledSize: new window.google.maps.Size(40, 40),  // Resize image (adjust as needed)
+                      origin: new window.google.maps.Point(0, 0),
+                      anchor: new window.google.maps.Point(20, 40),     // Anchor at bottom center
+                    }}
                   />
                 ))}
 
+
+                {selected && (
+                  <InfoWindow
+                    position={{ lat: selected.lat, lng: selected.lng }}
+                    onCloseClick={() => setSelected(null)}
+                  >
+                    <div style={{ textAlign: "center", width: "180px" }}>
+                      <h4 style={{ marginBottom: "5px" }}>{selected.name}</h4>
+                      {/* <p style={{ margin: "2px 0" }}>
+                        <strong>Status:</strong> {selected.status}
+                      </p> */}
+                      <p style={{ margin: "2px 0" }}>
+                        <strong>Division:</strong> {selected.division} <br />
+                        <strong>Sub Division:</strong> {selected.sub} <br />
+                        <strong>Sub Station No:</strong> {selected.SSno} <br />
+                        <strong>Sub Station KV:</strong> {selected.SSkv} <br />
+                        <strong>Capacity (MVA):</strong> {selected.capacity} <br />
+                        <strong>feeder:</strong> {selected.feeder} <br />
+                        <strong>Infeeder:</strong> {selected.infeeder} <br />
+                        <strong>Outfeeder:</strong> {selected.outfeeder} <br />
+                        <strong>Code:</strong> {selected.BU} <br />
+                        
+                      </p>
+
+                      {/* <img
+                        src={selected.img}
+                        alt={selected.name}
+                        style={{
+                          width: "150px",
+                          height: "100px",
+                          borderRadius: "8px",
+                          marginTop: "5px",
+                        }} */}
+                    </div>
+                  </InfoWindow>
+                )}
+
+
                 {/* Connection Line (Polyline) */}
-                <Polyline
+                {/* <Polyline
                   path={problemLocations.map((loc) => ({ lat: loc.lat, lng: loc.lng }))}
                   options={{
                     strokeColor: "#FF0000",
@@ -252,7 +311,7 @@ const HomePage = () => {
                     editable: false,
                     geodesic: true,
                   }}
-                />
+                /> */}
               </GoogleMap>
             </LoadScript>
           </div>
@@ -261,5 +320,4 @@ const HomePage = () => {
     </>
   );
 };
-
 export default HomePage;

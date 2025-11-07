@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Loginpage.css";
-import user_icon from "../assets/person.png";
-import password_icon from "../assets/passward.png";
-import email_icon from "../assets/Email.png";
+// import user_icon from "../../public/assets/person.png";
+// import password_icon from "../../public/assets/passward.png";
+// import email_icon from "../../public/assets/Email.png";
 
 const LoginPage = () => {
   const [action, setAction] = useState("Sign Up");
@@ -77,7 +77,7 @@ const LoginPage = () => {
       <div className="inputs">
         {action === "Login" ? null : (
           <div className="input">
-            <img src={user_icon} alt="" />
+            <img src="../../public/assets/person.png" alt="" />
             <input
               type="text"
               placeholder="UserName"
@@ -88,7 +88,7 @@ const LoginPage = () => {
         )}
 
         <div className="input">
-          <img src={email_icon} alt="" />
+          <img src={"../../public/assets/Email.png"} alt="" />
           <input
             type="email"
             placeholder="Email Id"
@@ -98,7 +98,7 @@ const LoginPage = () => {
         </div>
 
         <div className="input">
-          <img src={password_icon} alt="" />
+          <img src="../../public/assets/passward.png" alt="" />
           <input
             type="password"
             placeholder="Password"
