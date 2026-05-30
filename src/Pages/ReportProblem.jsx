@@ -24,21 +24,7 @@ const emptyRow = {
   nonAgConsumers: "",
 };
 
-const requiredFields = [
-  "srNo",
-  "division",
-  "subDivision",
-  "subStation",
-  "feederName",
-  "feederType",
-  "trippingTime",
-  "trippingDate",
-  "breakerOnTime",
-  "totalRestoreTime",
-  "restoreDate",
-  "voltageLevel",
-  "reason",
-];
+const requiredFields = ["subStation"];
 
 const normalizeStationName = (value) => value.trim().toLowerCase().replace(/\s+/g, " ");
 
@@ -157,15 +143,15 @@ const ReportProblem = () => {
       return;
     }
 
-    const existingProblems = JSON.parse(sessionStorage.getItem("problems") || "[]");
+    const existingProblems = JSON.parse(localStorage.getItem("problems") || "[]");
     const newProblems = filledRows.map((row, index) => ({
       ...row,
       id: Date.now() + index,
       timestamp: new Date().toISOString(),
-      status: "Active",
+      status: "Pending",
     }));
 
-    sessionStorage.setItem("problems", JSON.stringify([...existingProblems, ...newProblems]));
+    localStorage.setItem("problems", JSON.stringify([...existingProblems, ...newProblems]));
 
     alert("Problem report saved successfully.");
     navigate("/home");
@@ -234,7 +220,7 @@ const ReportProblem = () => {
           <div className="table-toolbar">
             <div>
               <h2>Problem Details</h2>
-              <p>Select a sub-station from the list to fill known station details automatically.</p>
+              <p>Select a sub-station from the list. Other details can be completed when resolving.</p>
             </div>
             <button type="button" onClick={addRow} className="add-row-btn">
               Add Row
@@ -316,7 +302,7 @@ const ReportProblem = () => {
           </datalist>
 
           <div className="form-actions">
-            <p>* Required fields must be filled if any data is entered in the row.</p>
+            <p>* Only sub-station is required while creating a pending report.</p>
             <button type="submit" className="submit-btn">
               Submit Report
             </button>

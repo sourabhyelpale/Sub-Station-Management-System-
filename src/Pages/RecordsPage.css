@@ -1,0 +1,146 @@
+.records-page {
+  min-height: 100vh;
+  padding: 24px;
+  background: #f4f7fb;
+  color: #172033;
+}
+
+.records-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(21, 37, 64, 0.08);
+}
+
+.records-header p {
+  margin: 0 0 6px;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.records-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #101828;
+}
+
+.records-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.records-actions button {
+  min-height: 40px;
+  border-radius: 7px;
+  cursor: pointer;
+  padding: 9px 16px;
+  font-weight: 800;
+}
+
+.secondary-record-btn {
+  border: 1px solid #b2ccff;
+  background: #ffffff;
+  color: #175cd3;
+}
+
+.download-record-btn {
+  border: 0;
+  background: #175cd3;
+  color: #ffffff;
+}
+
+.records-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.records-filters label {
+  display: grid;
+  gap: 7px;
+}
+
+.records-filters span {
+  color: #344054;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.records-filters input,
+.records-filters select {
+  height: 38px;
+  border: 1px solid #cfd8e6;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #ffffff;
+}
+
+.records-summary {
+  margin-bottom: 10px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.records-table-wrap {
+  overflow: auto;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(21, 37, 64, 0.08);
+}
+
+.records-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.records-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 12px 10px;
+  background: #1f2a44;
+  color: #ffffff;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.records-table td {
+  padding: 10px;
+  border-right: 1px solid #edf1f7;
+  border-bottom: 1px solid #edf1f7;
+  color: #344054;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.records-table tbody tr:nth-child(even) td {
+  background: #fbfcfe;
+}
+
+@media (max-width: 900px) {
+  .records-header,
+  .records-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .records-filters {
+    grid-template-columns: 1fr;
+  }
+}
