@@ -6,7 +6,7 @@ import RecordsPage from "./Pages/RecordsPage";
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/Sub-Station-Management-System-">
       <Routes>
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<LoginPage />} />
@@ -14,7 +14,7 @@ function App() {
         <Route path="/ReportProblem" element={<ReportProblem />} />
         <Route path="/resolved" element={<RecordsPage mode="resolved" />} />
         <Route path="/history" element={<RecordsPage mode="history" />} />
-      </Routes> 
+      </Routes>
     </BrowserRouter>
   );
 }
