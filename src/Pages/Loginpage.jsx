@@ -1,65 +1,67 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Loginpage.css";
-// import user_icon from "../../public/assets/person.png";
-// import password_icon from "../../public/assets/passward.png";
-// import email_icon from "../../public/assets/Email.png";
 
 const LoginPage = () => {
-  const [action, setAction] = useState("Sign Up");
+  const [action, setAction] = useState("Login");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  // Handle Sign Up
-  const handleSignUp = () => {
+  const isSignup = action === "Sign Up";
+
+  const resetForm = () => {
+    setUsername("");
+    setEmail("");
+    setPassword("");
+  };
+
+  const handleSignUp = (event) => {
+    event.preventDefault();
+
     if (!username || !email || !password) {
-      alert("Please fill all fields");
+      alert("Please fill all fields.");
       return;
     }
 
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-    const exists = users.find((u) => u.email === email);
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const exists = users.find((user) => user.email === email);
 
     if (exists) {
       alert("User already exists with this email.");
       return;
     }
 
-    users.push({ username, email, password });
-    localStorage.setItem("users", JSON.stringify(users));
-
-    alert("Sign Up Successful! Please Login.");
+    localStorage.setItem("users", JSON.stringify([...users, { username, email, password }]));
+    alert("Sign up successful. Please login.");
     setAction("Login");
-    setUsername("");
-    setEmail("");
-    setPassword("");
+    resetForm();
   };
 
-  // Handle Login
-  const handleLogin = (e) => {
-    e.preventDefault();
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-    const user = users.find((u) => u.email === email && u.password === password);
+  const handleLogin = (event) => {
+    event.preventDefault();
+
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const user = users.find((storedUser) => storedUser.email === email && storedUser.password === password);
 
     if (user) {
       localStorage.setItem("loggedInUser", JSON.stringify(user));
-      alert("Successfully logged in!");
       navigate("/home");
-    } else {
-      alert("Invalid credentials. Try again.");
+      return;
     }
+
+    alert("Invalid credentials. Try again.");
   };
 
-  // Handle Forgot Password
   const handleForgotPassword = () => {
     if (!email) {
       alert("Please enter your registered email first.");
       return;
     }
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-    const user = users.find((u) => u.email === email);
+
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const user = users.find((storedUser) => storedUser.email === email);
 
     if (user) {
       alert(`Your password is: ${user.password}`);
@@ -68,71 +70,119 @@ const LoginPage = () => {
     }
   };
 
+  const switchAction = () => {
+    setAction(isSignup ? "Login" : "Sign Up");
+    resetForm();
+  };
+
   return (
-    <div className="container">
-      <div className="header" >
-        <div className="text">{action}</div>
-      </div>
-
-      <div className="inputs">
-        {action === "Login" ? null : (
-          <div className="input">
-            <img src="../../public/assets/person.png" alt="" />
-            <input
-              type="text"
-              placeholder="UserName"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-        )}
-
-        <div className="input">
-          <img src={"../../public/assets/Email.png"} alt="" />
-          <input
-            type="email"
-            placeholder="Email Id"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+    <main className="auth-page">
+      <section className="auth-brand-panel">
+        <div className="brand-chip">MSEDCL Operations</div>
+        <div className="brand-logo-wrap">
+          <img
+            src="https://image.winudf.com/v2/image1/Y29tLm1zZWRjbC5hcHBfaWNvbl8xNTU1NTExMjI2XzA4Mg/icon.png?w=312&fakeurl=1"
+            alt="MSEDCL logo"
           />
         </div>
-
-        <div className="input">
-          <img src="../../public/assets/passward.png" alt="" />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {action === "Sign Up" ? null : (
-        <div className="forgot-password">
-          Lost Password? <span onClick={handleForgotPassword}>Click Here</span>
-        </div>
-      )}
-
-      <div className="submit-container">
-        {action === "Sign Up" ? (
-          <div className="submit" onClick={handleSignUp}>
-            Sign Up
+        <h1>Electricity Problem Tracking System</h1>
+        <p>
+          Monitor station issues, report outages, and keep restoration records organized from one
+          control dashboard.
+        </p>
+        <div className="auth-highlights">
+          <div>
+            <span>Live</span>
+            <p>Problem map</p>
           </div>
-        ) : (
-          <div className="submit" onClick={handleLogin}>
-            Login
+          <div>
+            <span>Fast</span>
+            <p>Report entry</p>
           </div>
-        )}
-
-        <div
-          className="submit gray"
-          onClick={() => setAction(action === "Sign Up" ? "Login" : "Sign Up")}
-        >
-          {action === "Sign Up" ? "Switch to Login" : "Switch to Sign Up"}
+          <div>
+            <span>Excel</span>
+            <p>Export ready</p>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <section className="auth-form-panel">
+        <div className="auth-card">
+          <div className="auth-card-header">
+            <p>{isSignup ? "Create secure access" : "Welcome back"}</p>
+            <h2>{isSignup ? "Create Account" : "Login to Dashboard"}</h2>
+          </div>
+
+          <div className="auth-toggle" aria-label="Authentication mode">
+            <button
+              className={!isSignup ? "selected" : ""}
+              onClick={() => setAction("Login")}
+              type="button"
+            >
+              Login
+            </button>
+            <button
+              className={isSignup ? "selected" : ""}
+              onClick={() => setAction("Sign Up")}
+              type="button"
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <form onSubmit={isSignup ? handleSignUp : handleLogin} className="auth-form">
+            {isSignup && (
+              <label className="auth-field">
+                <span>User name</span>
+                <input
+                  type="text"
+                  placeholder="Enter full name"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                />
+              </label>
+            )}
+
+            <label className="auth-field">
+              <span>Email address</span>
+              <input
+                type="email"
+                placeholder="admin@msedcl.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+
+            <label className="auth-field">
+              <span>Password</span>
+              <input
+                type="password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+
+            {!isSignup && (
+              <button type="button" className="forgot-link" onClick={handleForgotPassword}>
+                Forgot password?
+              </button>
+            )}
+
+            <button type="submit" className="auth-submit">
+              {isSignup ? "Create Account" : "Login"}
+            </button>
+          </form>
+
+          <p className="switch-copy">
+            {isSignup ? "Already have an account?" : "New operator?"}
+            <button type="button" onClick={switchAction}>
+              {isSignup ? "Login here" : "Create account"}
+            </button>
+          </p>
+        </div>
+      </section>
+    </main>
   );
 };
 

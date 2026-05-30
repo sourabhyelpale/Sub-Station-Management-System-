@@ -1,395 +1,327 @@
-import React, { useState, useEffect } from "react";
-import "./ReportProblem.css";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Papa from "papaparse";
+import "./ReportProblem.css";
+
+const emptyRow = {
+  srNo: "",
+  division: "",
+  subDivision: "",
+  subStation: "",
+  feederName: "",
+  feederType: "",
+  trippingTime: "",
+  trippingDate: "",
+  breakerOnTime: "",
+  totalRestoreTime: "",
+  restoreDate: "",
+  totalDuration: "",
+  voltageLevel: "",
+  reason: "",
+  agConsumers: "",
+  villages: "",
+  dtc: "",
+  nonAgConsumers: "",
+};
+
+const requiredFields = [
+  "srNo",
+  "division",
+  "subDivision",
+  "subStation",
+  "feederName",
+  "feederType",
+  "trippingTime",
+  "trippingDate",
+  "breakerOnTime",
+  "totalRestoreTime",
+  "restoreDate",
+  "voltageLevel",
+  "reason",
+];
+
+const normalizeStationName = (value) => value.trim().toLowerCase().replace(/\s+/g, " ");
 
 const ReportProblem = () => {
   const navigate = useNavigate();
-  const [rows, setRows] = useState([
-    {
-      srNo: "",
-      division: "",
-      subDivision: "",
-      subStation: "",
-      feederName: "",
-      feederType: "",
-      trippingTime: "",
-      trippingDate: "",
-      breakerOnTime: "",
-      totalRestoreTime: "",
-      restoreDate: "",
-      totalDuration: "",
-      voltageLevel: "",
-      reason: "",
-      agConsumers: "",
-      villages: "",
-      dtc: "",
-      nonAgConsumers: "",
-    },
-  ]);
+  const [rows, setRows] = useState([{ ...emptyRow }]);
+  const [errors, setErrors] = useState({});
+  const [stations, setStations] = useState([]);
 
   useEffect(() => {
-  document.body.style.zoom = "50%";   // zoom to 50% when page mounts
-  return () => {
-    document.body.style.zoom = "100%"; // reset when leaving page
-  };
-}, []);
+    Papa.parse("/data/problemLocations.csv", {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => {
+        setStations(result.data.filter((station) => station.name));
+      },
+    });
+  }, []);
 
-  const [errors, setErrors] = useState({});
+  const stationLookup = useMemo(() => {
+    return stations.reduce((lookup, station) => {
+      lookup[normalizeStationName(station.name)] = station;
+      return lookup;
+    }, {});
+  }, [stations]);
+
+  const stationNames = useMemo(() => {
+    return [...new Set(stations.map((station) => station.name).filter(Boolean))].sort();
+  }, [stations]);
+
+  const autofillFromStation = (row, stationName) => {
+    const station = stationLookup[normalizeStationName(stationName)];
+
+    if (!station) {
+      return {
+        ...row,
+        subStation: stationName,
+      };
+    }
+
+    return {
+      ...row,
+      subStation: station.name || stationName,
+      division: station.division || row.division,
+      subDivision: station.sub || row.subDivision,
+      feederName: station.feeder ? `${station.feeder} feeder(s)` : row.feederName,
+      feederType: station.SSkv || row.feederType,
+      voltageLevel: station.SSkv || row.voltageLevel,
+      dtc: station.BU || row.dtc,
+    };
+  };
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     rows.forEach((row, index) => {
       const rowErrors = {};
-      
-      // Check if any field is filled
-      const hasAnyData = Object.values(row).some(value => value.trim() !== "");
-      
+      const hasAnyData = Object.values(row).some((value) => String(value).trim() !== "");
+
       if (hasAnyData) {
-        // If any field has data, all required fields must be filled
-        const requiredFields = [
-          'srNo', 'division', 'subDivision', 'subStation', 
-          'feederName', 'feederType', 'trippingTime', 'trippingDate',
-          'breakerOnTime', 'totalRestoreTime', 'restoreDate', 
-          'voltageLevel', 'reason'
-        ];
-        
-        requiredFields.forEach(field => {
-          if (!row[field] || row[field].trim() === "") {
+        requiredFields.forEach((field) => {
+          if (!row[field] || String(row[field]).trim() === "") {
             rowErrors[field] = "This field is required";
           }
         });
-        
+
         if (Object.keys(rowErrors).length > 0) {
           newErrors[index] = rowErrors;
         }
       }
     });
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // Validate form
+  const clearFieldError = (rowIndex, field) => {
+    if (!errors[rowIndex] || !errors[rowIndex][field]) return;
+
+    const newErrors = { ...errors };
+    delete newErrors[rowIndex][field];
+
+    if (Object.keys(newErrors[rowIndex]).length === 0) {
+      delete newErrors[rowIndex];
+    }
+
+    setErrors(newErrors);
+  };
+
+  const handleChange = (index, field, value) => {
+    setRows((currentRows) => {
+      const updatedRows = [...currentRows];
+      const updatedRow = { ...updatedRows[index], [field]: value };
+      updatedRows[index] = field === "subStation" ? autofillFromStation(updatedRow, value) : updatedRow;
+      return updatedRows;
+    });
+
+    clearFieldError(index, field);
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
     if (!validateForm()) {
-      alert("⚠️ Please fill all required fields before submitting!");
+      alert("Please fill all required fields before submitting.");
       return;
     }
-    
-    // Filter out empty rows
-    const filledRows = rows.filter(row => 
-      Object.values(row).some(value => value.trim() !== "")
+
+    const filledRows = rows.filter((row) =>
+      Object.values(row).some((value) => String(value).trim() !== "")
     );
-    
+
     if (filledRows.length === 0) {
-      alert("⚠️ Please fill at least one row before submitting!");
+      alert("Please fill at least one row before submitting.");
       return;
     }
-    
-    // Get existing problems from memory
+
     const existingProblems = JSON.parse(sessionStorage.getItem("problems") || "[]");
-    
-    // Add new problems with timestamp and ID
     const newProblems = filledRows.map((row, index) => ({
       ...row,
       id: Date.now() + index,
       timestamp: new Date().toISOString(),
-      status: "Active"
+      status: "Active",
     }));
-    
-    // Combine and save
-    const allProblems = [...existingProblems, ...newProblems];
-    sessionStorage.setItem("problems", JSON.stringify(allProblems));
-    
-    alert("✅ Problem(s) reported successfully!");
+
+    sessionStorage.setItem("problems", JSON.stringify([...existingProblems, ...newProblems]));
+
+    alert("Problem report saved successfully.");
     navigate("/home");
   };
 
-  const handleChange = (index, field, value) => {
-    const updatedRows = [...rows];
-    updatedRows[index][field] = value;
-    setRows(updatedRows);
-    
-    // Clear error for this field
-    if (errors[index] && errors[index][field]) {
-      const newErrors = { ...errors };
-      delete newErrors[index][field];
-      if (Object.keys(newErrors[index]).length === 0) {
-        delete newErrors[index];
-      }
-      setErrors(newErrors);
-    }
-  };
-
   const addRow = () => {
-    setRows([
-      ...rows,
-      {
-        srNo: "",
-        division: "",
-        subDivision: "",
-        subStation: "",
-        feederName: "",
-        feederType: "",
-        trippingTime: "",
-        trippingDate: "",
-        breakerOnTime: "",
-        totalRestoreTime: "",
-        restoreDate: "",
-        totalDuration: "",
-        voltageLevel: "",
-        reason: "",
-        agConsumers: "",
-        villages: "",
-        dtc: "",
-        nonAgConsumers: "",
-      },
-    ]);
+    setRows((currentRows) => [...currentRows, { ...emptyRow, srNo: String(currentRows.length + 1) }]);
   };
 
   const deleteRow = (index) => {
-    if (rows.length > 1) {
-      const updatedRows = rows.filter((_, i) => i !== index);
-      setRows(updatedRows);
-      
-      // Remove errors for deleted row
-      const newErrors = { ...errors };
-      delete newErrors[index];
-      setErrors(newErrors);
-    } else {
-      alert("At least one row is required!");
+    if (rows.length === 1) {
+      alert("At least one row is required.");
+      return;
     }
+
+    setRows((currentRows) => currentRows.filter((_, rowIndex) => rowIndex !== index));
+    setErrors((currentErrors) => {
+      const nextErrors = { ...currentErrors };
+      delete nextErrors[index];
+      return nextErrors;
+    });
   };
 
-  const getInputClassName = (rowIndex, field) => {
-    return errors[rowIndex] && errors[rowIndex][field] ? "input-error" : "";
-  };
+  const getInputClassName = (rowIndex, field) => (
+    errors[rowIndex] && errors[rowIndex][field] ? "input-error" : ""
+  );
+
+  const renderInput = (row, index, field, props = {}) => (
+    <input
+      value={row[field]}
+      onChange={(event) => handleChange(index, field, event.target.value)}
+      className={getInputClassName(index, field)}
+      {...props}
+    />
+  );
 
   return (
     <div className="report-problem">
-      <div className="report-header">
-        <h3>⚡ Report New Electricity Problem</h3>
-        <button className="back-btn" onClick={() => navigate("/home")}>
-          ← Back to Home
-        </button>
-      </div>
+      <div className="report-shell">
+        <header className="report-header">
+          <div>
+            <p className="report-kicker">Operations entry</p>
+            <h1>Report Electricity Problem</h1>
+          </div>
+          <button className="back-btn" onClick={() => navigate("/home")} type="button">
+            Back to Home
+          </button>
+        </header>
 
-      <form onSubmit={handleSubmit}>
-        <div className="table-container">
-          <table border="1" cellPadding="8" className="report-table">
-            <thead>
-              <tr>
-                <th>Sr. No. *</th>
-                <th>Division *</th>
-                <th>Sub-Division *</th>
-                <th>Sub Station *</th>
-                <th>Feeder Name *</th>
-                <th>Type of Feeder *</th>
-                <th>Tripping Time *</th>
-                <th>Tripping Date *</th>
-                <th>Breaker ON Time *</th>
-                <th>Total Restore Time *</th>
-                <th>Restore Date *</th>
-                <th>Total Duration</th>
-                <th>Voltage Level *</th>
-                <th>Reason *</th>
-                <th>AG Consumers</th>
-                <th>Villages</th>
-                <th>DTC</th>
-                <th>Non AG Consumers</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, index) => (
-                <tr key={index}>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.srNo}
-                      onChange={(e) => handleChange(index, "srNo", e.target.value)}
-                      className={getInputClassName(index, "srNo")}
-                      placeholder="1"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.division}
-                      onChange={(e) => handleChange(index, "division", e.target.value)}
-                      className={getInputClassName(index, "division")}
-                      placeholder="Division"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.subDivision}
-                      onChange={(e) => handleChange(index, "subDivision", e.target.value)}
-                      className={getInputClassName(index, "subDivision")}
-                      placeholder="Sub-Division"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.subStation}
-                      onChange={(e) => handleChange(index, "subStation", e.target.value)}
-                      className={getInputClassName(index, "subStation")}
-                      placeholder="Station Name"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.feederName}
-                      onChange={(e) => handleChange(index, "feederName", e.target.value)}
-                      className={getInputClassName(index, "feederName")}
-                      placeholder="Feeder"
-                    />
-                  </td>
-                  <td>
-                    <select
-                      value={row.feederType}
-                      onChange={(e) => handleChange(index, "feederType", e.target.value)}
-                      className={getInputClassName(index, "feederType")}
-                    >
-                      <option value="">Select</option>
-                      <option value="11KV">11KV</option>
-                      <option value="33KV">33KV</option>
-                      <option value="66KV">66KV</option>
-                      <option value="132KV">132KV</option>
-                    </select>
-                  </td>
-                  <td>
-                    <input
-                      type="time"
-                      value={row.trippingTime}
-                      onChange={(e) => handleChange(index, "trippingTime", e.target.value)}
-                      className={getInputClassName(index, "trippingTime")}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="date"
-                      value={row.trippingDate}
-                      onChange={(e) => handleChange(index, "trippingDate", e.target.value)}
-                      className={getInputClassName(index, "trippingDate")}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="time"
-                      value={row.breakerOnTime}
-                      onChange={(e) => handleChange(index, "breakerOnTime", e.target.value)}
-                      className={getInputClassName(index, "breakerOnTime")}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="time"
-                      value={row.totalRestoreTime}
-                      onChange={(e) => handleChange(index, "totalRestoreTime", e.target.value)}
-                      className={getInputClassName(index, "totalRestoreTime")}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="date"
-                      value={row.restoreDate}
-                      onChange={(e) => handleChange(index, "restoreDate", e.target.value)}
-                      className={getInputClassName(index, "restoreDate")}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.totalDuration}
-                      onChange={(e) => handleChange(index, "totalDuration", e.target.value)}
-                      placeholder="hrs"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.voltageLevel}
-                      onChange={(e) => handleChange(index, "voltageLevel", e.target.value)}
-                      className={getInputClassName(index, "voltageLevel")}
-                      placeholder="KV"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.reason}
-                      onChange={(e) => handleChange(index, "reason", e.target.value)}
-                      className={getInputClassName(index, "reason")}
-                      placeholder="Reason"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.agConsumers}
-                      onChange={(e) => handleChange(index, "agConsumers", e.target.value)}
-                      placeholder="Count"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.villages}
-                      onChange={(e) => handleChange(index, "villages", e.target.value)}
-                      placeholder="Villages"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.dtc}
-                      onChange={(e) => handleChange(index, "dtc", e.target.value)}
-                      placeholder="DTC"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={row.nonAgConsumers}
-                      onChange={(e) => handleChange(index, "nonAgConsumers", e.target.value)}
-                      placeholder="Count"
-                    />
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => deleteRow(index)}
-                      className="delete-btn"
-                      title="Delete Row"
-                    >
-                      🗑️
-                    </button>
-                  </td>
+        <section className="report-summary">
+          <div>
+            <span>{rows.length}</span>
+            <p>Draft rows</p>
+          </div>
+          <div>
+            <span>{stationNames.length}</span>
+            <p>Sub-stations available</p>
+          </div>
+          <div>
+            <span>Auto-fill</span>
+            <p>Division, sub-division, voltage and feeder count</p>
+          </div>
+        </section>
+
+        <form onSubmit={handleSubmit}>
+          <div className="table-toolbar">
+            <div>
+              <h2>Problem Details</h2>
+              <p>Select a sub-station from the list to fill known station details automatically.</p>
+            </div>
+            <button type="button" onClick={addRow} className="add-row-btn">
+              Add Row
+            </button>
+          </div>
+
+          <div className="table-container">
+            <table className="report-table">
+              <thead>
+                <tr>
+                  <th>Sr. No. *</th>
+                  <th>Division *</th>
+                  <th>Sub-Division *</th>
+                  <th>Sub Station *</th>
+                  <th>Feeder Name *</th>
+                  <th>Type of Feeder *</th>
+                  <th>Tripping Time *</th>
+                  <th>Tripping Date *</th>
+                  <th>Breaker ON Time *</th>
+                  <th>Total Restore Time *</th>
+                  <th>Restore Date *</th>
+                  <th>Total Duration</th>
+                  <th>Voltage Level *</th>
+                  <th>Reason *</th>
+                  <th>AG Consumers</th>
+                  <th>Villages</th>
+                  <th>DTC / BU</th>
+                  <th>Non AG Consumers</th>
+                  <th>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((row, index) => (
+                  <tr key={index}>
+                    <td>{renderInput(row, index, "srNo", { placeholder: "1" })}</td>
+                    <td>{renderInput(row, index, "division", { placeholder: "Division" })}</td>
+                    <td>{renderInput(row, index, "subDivision", { placeholder: "Sub-division" })}</td>
+                    <td>
+                      {renderInput(row, index, "subStation", {
+                        placeholder: "Search sub-station",
+                        list: "sub-station-options",
+                      })}
+                    </td>
+                    <td>{renderInput(row, index, "feederName", { placeholder: "Feeder" })}</td>
+                    <td>{renderInput(row, index, "feederType", { placeholder: "11KV / 33KV" })}</td>
+                    <td>{renderInput(row, index, "trippingTime", { type: "time" })}</td>
+                    <td>{renderInput(row, index, "trippingDate", { type: "date" })}</td>
+                    <td>{renderInput(row, index, "breakerOnTime", { type: "time" })}</td>
+                    <td>{renderInput(row, index, "totalRestoreTime", { type: "time" })}</td>
+                    <td>{renderInput(row, index, "restoreDate", { type: "date" })}</td>
+                    <td>{renderInput(row, index, "totalDuration", { placeholder: "Hours" })}</td>
+                    <td>{renderInput(row, index, "voltageLevel", { placeholder: "KV" })}</td>
+                    <td>{renderInput(row, index, "reason", { placeholder: "Reason" })}</td>
+                    <td>{renderInput(row, index, "agConsumers", { placeholder: "Count" })}</td>
+                    <td>{renderInput(row, index, "villages", { placeholder: "Villages" })}</td>
+                    <td>{renderInput(row, index, "dtc", { placeholder: "BU code" })}</td>
+                    <td>{renderInput(row, index, "nonAgConsumers", { placeholder: "Count" })}</td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => deleteRow(index)}
+                        className="delete-btn"
+                        title="Delete row"
+                        aria-label={`Delete row ${index + 1}`}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-        <div className="form-actions">
-          <button type="button" onClick={addRow} className="add-row-btn">
-            ➕ Add Another Row
-          </button>
-          <button type="submit" className="submit-btn">
-            ✅ Submit Report
-          </button>
-        </div>
-      </form>
+          <datalist id="sub-station-options">
+            {stationNames.map((stationName) => (
+              <option value={stationName} key={stationName} />
+            ))}
+          </datalist>
 
-      <div className="form-note">
-        * Required fields must be filled if any data is entered in the row
+          <div className="form-actions">
+            <p>* Required fields must be filled if any data is entered in the row.</p>
+            <button type="submit" className="submit-btn">
+              Submit Report
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

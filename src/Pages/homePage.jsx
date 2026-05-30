@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { GoogleMap, LoadScript, Marker, InfoWindow, Polyline } from "@react-google-maps/api";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import L from "leaflet";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
+import "leaflet/dist/leaflet.css";
 import "./homePage.css";
+
+const stationIcon = L.divIcon({
+  className: "station-map-marker",
+  html: "<span></span>",
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+  popupAnchor: [0, -12],
+});
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -14,9 +24,6 @@ const HomePage = () => {
   useEffect(() => {
     loadProblems();
   }, [refreshKey]);
-
-  const [selected, setSelected] = useState(null);
-
 
   const loadProblems = () => {
     const storedProblems = JSON.parse(sessionStorage.getItem("problems") || "[]");
@@ -96,8 +103,6 @@ const HomePage = () => {
 
   // Kolhapur district center
   const kolhapurCenter = { lat: 16.7050, lng: 74.2433 };
-  const activeIcon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
-  const resolvedIcon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
 
   const [problemLocations, setProblemLocations] = useState([]);
 
@@ -108,11 +113,13 @@ const HomePage = () => {
       header: true,
       complete: (result) => {
         // Convert lat/lng to numbers for map use
-        const formatted = result.data.map((item) => ({
-          ...item,
-          lat: parseFloat(item.lat),
-          lng: parseFloat(item.lng),
-        }));
+        const formatted = result.data
+          .map((item) => ({
+            ...item,
+            lat: parseFloat(item.lat),
+            lng: parseFloat(item.lng),
+          }))
+          .filter((item) => !Number.isNaN(item.lat) && !Number.isNaN(item.lng));
         setProblemLocations(formatted);
       },
     });
@@ -239,81 +246,41 @@ const HomePage = () => {
             </div>
           </div>
           <div className="map-container">
-            <LoadScript googleMapsApiKey="AIzaSyABLnG2NhzOeMql5MTI5fBlvSE7rzTox28">
-              <GoogleMap
-                mapContainerStyle={{ height: "500px", width: "100%" }}
-                center={kolhapurCenter}
-                zoom={12}
-              >
-                {/* Markers */}
-                {problemLocations.map((loc) => (
-                  <Marker
-                    key={loc.id}
-                    position={{ lat: loc.lat, lng: loc.lng }}
-                    title={loc.name}
-                    onClick={() => setSelected(loc)}
-                    icon={{
-                      url: loc.img,                // Path to your image
-                      scaledSize: new window.google.maps.Size(40, 40),  // Resize image (adjust as needed)
-                      origin: new window.google.maps.Point(0, 0),
-                      anchor: new window.google.maps.Point(20, 40),     // Anchor at bottom center
-                    }}
-                  />
-                ))}
-
-
-                {selected && (
-                  <InfoWindow
-                    position={{ lat: selected.lat, lng: selected.lng }}
-                    onCloseClick={() => setSelected(null)}
-                  >
-                    <div style={{ textAlign: "center", width: "180px" }}>
-                      <h4 style={{ marginBottom: "5px" }}>{selected.name}</h4>
-                      {/* <p style={{ margin: "2px 0" }}>
-                        <strong>Status:</strong> {selected.status}
-                      </p> */}
-                      <p style={{ margin: "2px 0" }}>
-                        <strong>Division:</strong> {selected.division} <br />
-                        <strong>Sub Division:</strong> {selected.sub} <br />
-                        <strong>Sub Station No:</strong> {selected.SSno} <br />
-                        <strong>Sub Station KV:</strong> {selected.SSkv} <br />
-                        <strong>Capacity (MVA):</strong> {selected.capacity} <br />
-                        <strong>feeder:</strong> {selected.feeder} <br />
-                        <strong>Infeeder:</strong> {selected.infeeder} <br />
-                        <strong>Outfeeder:</strong> {selected.outfeeder} <br />
-                        <strong>Code:</strong> {selected.BU} <br />
-                        
+            <MapContainer
+              className="google-map"
+              center={[kolhapurCenter.lat, kolhapurCenter.lng]}
+              zoom={12}
+              scrollWheelZoom
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {problemLocations.map((loc) => (
+                <Marker
+                  key={loc.id}
+                  position={[loc.lat, loc.lng]}
+                  icon={stationIcon}
+                >
+                  <Popup>
+                    <div className="station-popup">
+                      <h4>{loc.name}</h4>
+                      <p>
+                        <strong>Division:</strong> {loc.division || "-"} <br />
+                        <strong>Sub Division:</strong> {loc.sub || "-"} <br />
+                        <strong>Sub Station No:</strong> {loc.SSno || "-"} <br />
+                        <strong>Sub Station KV:</strong> {loc.SSkv || "-"} <br />
+                        <strong>Capacity (MVA):</strong> {loc.capacity || "-"} <br />
+                        <strong>Feeder:</strong> {loc.feeder || "-"} <br />
+                        <strong>Infeeder:</strong> {loc.infeeder || "-"} <br />
+                        <strong>Outfeeder:</strong> {loc.outfeeder || "-"} <br />
+                        <strong>Code:</strong> {loc.BU || "-"}
                       </p>
-
-                      {/* <img
-                        src={selected.img}
-                        alt={selected.name}
-                        style={{
-                          width: "150px",
-                          height: "100px",
-                          borderRadius: "8px",
-                          marginTop: "5px",
-                        }} */}
                     </div>
-                  </InfoWindow>
-                )}
-
-
-                {/* Connection Line (Polyline) */}
-                {/* <Polyline
-                  path={problemLocations.map((loc) => ({ lat: loc.lat, lng: loc.lng }))}
-                  options={{
-                    strokeColor: "#FF0000",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 3,
-                    clickable: false,
-                    draggable: false,
-                    editable: false,
-                    geodesic: true,
-                  }}
-                /> */}
-              </GoogleMap>
-            </LoadScript>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
           </div>
         </div>
       </div>
