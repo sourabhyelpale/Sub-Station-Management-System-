@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/Sub-Station-Management-System-/static/css/main.0919651e.css",
+    "main.js": "/Sub-Station-Management-System-/static/js/main.c8d665fb.js",
+    "index.html": "/Sub-Station-Management-System-/index.html",
+    "main.0919651e.css.map": "/Sub-Station-Management-System-/static/css/main.0919651e.css.map",
+    "main.c8d665fb.js.map": "/Sub-Station-Management-System-/static/js/main.c8d665fb.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0919651e.css",
+    "static/js/main.c8d665fb.js"
+  ]
+}
