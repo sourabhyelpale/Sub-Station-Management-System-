@@ -26,7 +26,14 @@ const emptyRow = {
 
 const requiredFields = ["subStation"];
 
+const stationDataUrl = `${process.env.PUBLIC_URL || ""}/data/problemLocations.csv`;
+
 const normalizeStationName = (value) => value.trim().toLowerCase().replace(/\s+/g, " ");
+
+const normalizeStation = (station) => ({
+  ...station,
+  name: station.name || station.stationName || station.subStation || station["Sub Station"] || "",
+});
 
 const ReportProblem = () => {
   const navigate = useNavigate();
@@ -35,12 +42,16 @@ const ReportProblem = () => {
   const [stations, setStations] = useState([]);
 
   useEffect(() => {
-    Papa.parse("/data/problemLocations.csv", {
+    Papa.parse(stationDataUrl, {
       download: true,
       header: true,
       skipEmptyLines: true,
+      transformHeader: (header) => header.trim(),
       complete: (result) => {
-        setStations(result.data.filter((station) => station.name));
+        setStations(result.data.map(normalizeStation).filter((station) => station.name));
+      },
+      error: (error) => {
+        console.error("Unable to load station data", error);
       },
     });
   }, []);
@@ -259,10 +270,18 @@ const ReportProblem = () => {
                     <td>{renderInput(row, index, "division", { placeholder: "Division" })}</td>
                     <td>{renderInput(row, index, "subDivision", { placeholder: "Sub-division" })}</td>
                     <td>
-                      {renderInput(row, index, "subStation", {
-                        placeholder: "Search sub-station",
-                        list: "sub-station-options",
-                      })}
+                      <select
+                        value={row.subStation}
+                        onChange={(event) => handleChange(index, "subStation", event.target.value)}
+                        className={getInputClassName(index, "subStation")}
+                      >
+                        <option value="">Select sub-station</option>
+                        {stationNames.map((stationName) => (
+                          <option value={stationName} key={stationName}>
+                            {stationName}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                     <td>{renderInput(row, index, "feederName", { placeholder: "Feeder" })}</td>
                     <td>{renderInput(row, index, "feederType", { placeholder: "11KV / 33KV" })}</td>
@@ -294,12 +313,6 @@ const ReportProblem = () => {
               </tbody>
             </table>
           </div>
-
-          <datalist id="sub-station-options">
-            {stationNames.map((stationName) => (
-              <option value={stationName} key={stationName} />
-            ))}
-          </datalist>
 
           <div className="form-actions">
             <p>* Only sub-station is required while creating a pending report.</p>

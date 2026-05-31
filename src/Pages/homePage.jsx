@@ -7,6 +7,8 @@ import Papa from "papaparse";
 import "leaflet/dist/leaflet.css";
 import "./homePage.css";
 
+const stationDataUrl = `${process.env.PUBLIC_URL || ""}/data/problemLocations.csv`;
+
 const stationIcon = L.divIcon({
   className: "station-map-marker",
   html: "<span></span>",
@@ -24,6 +26,19 @@ const pendingStationIcon = L.divIcon({
 });
 
 const normalizeStationName = (value = "") => value.trim().toLowerCase().replace(/\s+/g, " ");
+
+const normalizeStationLocation = (item) => {
+  const lat = parseFloat(item.lat || item.latitude || item.Latitude);
+  const lng = parseFloat(item.lng || item.lon || item.longitude || item.Longitude);
+
+  return {
+    ...item,
+    id: item.id || item.SSno || `${item.name || item.stationName || item.subStation}-${lat}-${lng}`,
+    name: item.name || item.stationName || item.subStation || item["Sub Station"] || "",
+    lat,
+    lng,
+  };
+};
 
 const problemFields = [
   { key: "srNo", label: "Sr. No." },
@@ -233,19 +248,20 @@ const HomePage = () => {
 
   useEffect(() => {
     // Load CSV from public folder
-    Papa.parse("/data/problemLocations.csv", {
+    Papa.parse(stationDataUrl, {
       download: true,
       header: true,
+      skipEmptyLines: true,
+      transformHeader: (header) => header.trim(),
       complete: (result) => {
         // Convert lat/lng to numbers for map use
         const formatted = result.data
-          .map((item) => ({
-            ...item,
-            lat: parseFloat(item.lat),
-            lng: parseFloat(item.lng),
-          }))
-          .filter((item) => !Number.isNaN(item.lat) && !Number.isNaN(item.lng));
+          .map(normalizeStationLocation)
+          .filter((item) => item.name && !Number.isNaN(item.lat) && !Number.isNaN(item.lng));
         setProblemLocations(formatted);
+      },
+      error: (error) => {
+        console.error("Unable to load station location data", error);
       },
     });
   }, []);
