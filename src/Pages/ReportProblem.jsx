@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Papa from "papaparse";
+import { createProblem } from "../services/firestoreService";
 import "./ReportProblem.css";
 
 const emptyRow = {
@@ -137,7 +138,7 @@ const ReportProblem = () => {
     clearFieldError(index, field);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!validateForm()) {
@@ -154,18 +155,24 @@ const ReportProblem = () => {
       return;
     }
 
-    const existingProblems = JSON.parse(localStorage.getItem("problems") || "[]");
+    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser") || "null");
     const newProblems = filledRows.map((row, index) => ({
       ...row,
-      id: Date.now() + index,
       timestamp: new Date().toISOString(),
       status: "Pending",
+      resolvedAt: null,
+      createdBy: loggedInUser?.id || loggedInUser?.email || null,
+      updatedAt: new Date().toISOString(),
     }));
 
-    localStorage.setItem("problems", JSON.stringify([...existingProblems, ...newProblems]));
-
-    alert("Problem report saved successfully.");
-    navigate("/home");
+    try {
+      await Promise.all(newProblems.map((problem) => createProblem(problem)));
+      alert("Problem report saved successfully.");
+      navigate("/home");
+    } catch (error) {
+      console.error("Unable to save problem report", error);
+      alert("Unable to save report to Firebase. Please try again.");
+    }
   };
 
   const addRow = () => {

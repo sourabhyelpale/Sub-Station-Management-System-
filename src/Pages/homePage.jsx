@@ -4,6 +4,13 @@ import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
+import {
+  createHistoryEntry,
+  deleteProblem,
+  getProblemHistory,
+  getProblems,
+  updateProblem,
+} from "../services/firestoreService";
 import "leaflet/dist/leaflet.css";
 import "./homePage.css";
 
@@ -76,18 +83,18 @@ const HomePage = () => {
     loadProblems();
   }, [refreshKey]);
 
-  const loadProblems = () => {
-    const storedProblems = JSON.parse(localStorage.getItem("problems") || "[]");
-    const sessionProblems = JSON.parse(sessionStorage.getItem("problems") || "[]");
-    const availableProblems = storedProblems.length > 0 ? storedProblems : sessionProblems;
-    const storedHistory = JSON.parse(localStorage.getItem("problemHistory") || "[]");
-
-    if (storedProblems.length === 0 && sessionProblems.length > 0) {
-      localStorage.setItem("problems", JSON.stringify(sessionProblems));
+  const loadProblems = async () => {
+    try {
+      const [storedProblems, storedHistory] = await Promise.all([
+        getProblems(),
+        getProblemHistory(),
+      ]);
+      setProblems(storedProblems);
+      setHistory(storedHistory);
+    } catch (error) {
+      console.error("Unable to load Firestore data", error);
+      alert("Unable to load problem data from Firebase.");
     }
-
-    setProblems(availableProblems);
-    setHistory(storedHistory);
   };
 
   const handleLogout = () => {
@@ -104,21 +111,19 @@ const HomePage = () => {
     alert("✅ Data refreshed successfully!");
   };
 
-  const saveProblems = (updatedProblems) => {
-    localStorage.setItem("problems", JSON.stringify(updatedProblems));
+  const saveProblems = async (updatedProblems) => {
     setProblems(updatedProblems);
   };
 
-  const addHistoryEntry = (problem, action) => {
+  const addHistoryEntry = async (problem, action) => {
     const historyEntry = {
       ...problem,
       historyId: `${problem.id}-${action}-${Date.now()}`,
       historyAction: action,
       historyTimestamp: new Date().toISOString(),
     };
-    const updatedHistory = [historyEntry, ...history];
-    localStorage.setItem("problemHistory", JSON.stringify(updatedHistory));
-    setHistory(updatedHistory);
+    const savedEntry = await createHistoryEntry(historyEntry);
+    setHistory((currentHistory) => [savedEntry, ...currentHistory]);
   };
 
   const openResolveModal = (problem) => {
@@ -136,7 +141,7 @@ const HomePage = () => {
     });
   };
 
-  const submitResolveProblem = (event) => {
+  const submitResolveProblem = async (event) => {
     event.preventDefault();
     if (!resolveProblem || !resolveDraft) return;
 
@@ -153,13 +158,13 @@ const HomePage = () => {
       return;
     }
 
-    handleResolveProblem(resolveProblem.id, resolveDraft);
+    await handleResolveProblem(resolveProblem.id, resolveDraft);
     setResolveProblem(null);
     setResolveDraft(null);
     setResolveErrors({});
   };
 
-  const handleResolveProblem = (problemId, completedData) => {
+  const handleResolveProblem = async (problemId, completedData) => {
     const problem = problems.find((item) => item.id === problemId);
     if (!problem) return;
 
@@ -170,16 +175,28 @@ const HomePage = () => {
       resolvedAt: new Date().toISOString(),
     };
 
-    saveProblems(problems.map((item) => (item.id === problemId ? updatedProblem : item)));
-    addHistoryEntry(updatedProblem, "Resolved");
+    try {
+      await updateProblem(problemId, updatedProblem);
+      await saveProblems(problems.map((item) => (item.id === problemId ? updatedProblem : item)));
+      await addHistoryEntry(updatedProblem, "Resolved");
+    } catch (error) {
+      console.error("Unable to resolve problem", error);
+      alert("Unable to resolve problem. Please try again.");
+    }
   };
 
-  const handleDeleteProblem = (problemId) => {
+  const handleDeleteProblem = async (problemId) => {
     const problem = problems.find((item) => item.id === problemId);
     if (!problem) return;
 
-    saveProblems(problems.filter((item) => item.id !== problemId));
-    addHistoryEntry(problem, "Deleted");
+    try {
+      await deleteProblem(problemId);
+      await saveProblems(problems.filter((item) => item.id !== problemId));
+      await addHistoryEntry(problem, "Deleted");
+    } catch (error) {
+      console.error("Unable to delete problem", error);
+      alert("Unable to delete problem. Please try again.");
+    }
   };
 
   const renderDetailValue = (value) => value || "-";

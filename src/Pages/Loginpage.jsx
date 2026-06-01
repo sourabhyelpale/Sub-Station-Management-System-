@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createUser, getUserByEmail } from "../services/firestoreService";
 import "./Loginpage.css";
 
 const LoginPage = () => {
@@ -17,7 +18,7 @@ const LoginPage = () => {
     setPassword("");
   };
 
-  const handleSignUp = (event) => {
+  const handleSignUp = async (event) => {
     event.preventDefault();
 
     if (!username || !email || !password) {
@@ -25,43 +26,50 @@ const LoginPage = () => {
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const exists = users.find((user) => user.email === email);
+    const exists = await getUserByEmail(email);
 
     if (exists) {
       alert("User already exists with this email.");
       return;
     }
 
-    localStorage.setItem("users", JSON.stringify([...users, { username, email, password }]));
-    alert("Sign up successful. Please login.");
-    setAction("Login");
-    resetForm();
+    try {
+      await createUser({ username, email, password });
+      alert("Sign up successful. Please login.");
+      setAction("Login");
+      resetForm();
+    } catch (error) {
+      console.error("Sign up failed", error);
+      alert("Unable to create account. Please try again.");
+    }
   };
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const user = users.find((storedUser) => storedUser.email === email && storedUser.password === password);
+    try {
+      const user = await getUserByEmail(email);
 
-    if (user) {
-      localStorage.setItem("loggedInUser", JSON.stringify(user));
-      navigate("/home");
-      return;
+      if (user && user.password === password) {
+        localStorage.setItem("loggedInUser", JSON.stringify(user));
+        navigate("/home");
+        return;
+      }
+
+      alert("Invalid credentials. Try again.");
+    } catch (error) {
+      console.error("Login failed", error);
+      alert("Unable to login. Please try again.");
     }
-
-    alert("Invalid credentials. Try again.");
   };
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = async () => {
     if (!email) {
       alert("Please enter your registered email first.");
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const user = users.find((storedUser) => storedUser.email === email);
+    const user = await getUserByEmail(email);
 
     if (user) {
       alert(`Your password is: ${user.password}`);

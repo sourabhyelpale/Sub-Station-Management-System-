@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
+import { getProblemHistory, getProblems } from "../services/firestoreService";
 import "./RecordsPage.css";
 
 const fields = [
@@ -44,14 +45,25 @@ const RecordsPage = ({ mode }) => {
     division: "",
     subDivision: "",
   });
+  const [allRecords, setAllRecords] = useState([]);
 
-  const allRecords = useMemo(() => {
-    if (mode === "history") {
-      return JSON.parse(localStorage.getItem("problemHistory") || "[]");
-    }
+  useEffect(() => {
+    const loadRecords = async () => {
+      try {
+        if (mode === "history") {
+          setAllRecords(await getProblemHistory());
+          return;
+        }
 
-    return JSON.parse(localStorage.getItem("problems") || "[]")
-      .filter((problem) => problem.status === "Resolved");
+        const problems = await getProblems();
+        setAllRecords(problems.filter((problem) => problem.status === "Resolved"));
+      } catch (error) {
+        console.error("Unable to load records", error);
+        alert("Unable to load records from Firebase.");
+      }
+    };
+
+    loadRecords();
   }, [mode]);
 
   const filteredRecords = useMemo(() => {
