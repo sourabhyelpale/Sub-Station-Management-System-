@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Papa from "papaparse";
 import { createProblem } from "../services/firestoreService";
+import { reportIssueToTelegram } from "../services/backendService";
 import "./ReportProblem.css";
 
 const emptyRow = {
@@ -40,6 +41,7 @@ const ReportProblem = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([{ ...emptyRow }]);
   const [errors, setErrors] = useState({});
+  const [backendNotification, setBackendNotification] = useState(null);
   const [stations, setStations] = useState([]);
 
   useEffect(() => {
@@ -166,12 +168,43 @@ const ReportProblem = () => {
     }));
 
     try {
-      await Promise.all(newProblems.map((problem) => createProblem(problem)));
-      alert("Problem report saved successfully.");
+      setBackendNotification(null);
+      const savedProblems = await Promise.all(newProblems.map((problem) => createProblem(problem)));
+
+      const telegramResults = await Promise.allSettled(
+        savedProblems.map((problem) =>
+          reportIssueToTelegram({
+            issueId: problem.id,
+            division: problem.division,
+            subStation: problem.subStation,
+            feederType: problem.feederType,
+            trippingTime: problem.trippingTime,
+            reason: problem.reason,
+          })
+        )
+      );
+
+      const failedTelegram = telegramResults.filter((result) => result.status === "rejected");
+
+      if (failedTelegram.length > 0) {
+        const message =
+          "Problem report saved, but Telegram notification failed. Please check the Telegram backend.";
+        console.warn("Telegram notification failed for some problems:", failedTelegram);
+        setBackendNotification(message);
+        localStorage.setItem("backendNotification", message);
+      } else {
+        setBackendNotification("Problem report saved and Telegram notification sent successfully.");
+        localStorage.removeItem("backendNotification");
+      }
+
       navigate("/home");
     } catch (error) {
       console.error("Unable to save problem report", error);
-      alert("Unable to save report to Firebase. Please try again.");
+      const message =
+        "Unable to connect to the Telegram backend. The problem may have been saved locally, but notification was not sent.";
+      setBackendNotification(message);
+      localStorage.setItem("backendNotification", message);
+      alert("Unable to save report to Firebase or notify Telegram. Please try again.");
     }
   };
 
@@ -218,6 +251,20 @@ const ReportProblem = () => {
             Back to Home
           </button>
         </header>
+        {backendNotification && (
+          <div
+            style={{
+              margin: "16px 0",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              backgroundColor: "#fff4e5",
+              color: "#7a5200",
+              border: "1px solid #ffcc80",
+            }}
+          >
+            {backendNotification}
+          </div>
+        )}
 
         <section className="report-summary">
           <div>
