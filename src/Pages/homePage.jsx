@@ -11,6 +11,7 @@ import {
   getProblems,
   updateProblem,
 } from "../services/firestoreService";
+import { resolveTelegramIssue } from "../services/backendService";
 import "leaflet/dist/leaflet.css";
 import "./homePage.css";
 
@@ -77,6 +78,15 @@ const HomePage = () => {
   const [resolveProblem, setResolveProblem] = useState(null);
   const [resolveDraft, setResolveDraft] = useState(null);
   const [resolveErrors, setResolveErrors] = useState({});
+  const [backendNotification, setBackendNotification] = useState(null);
+
+  useEffect(() => {
+    const storedNotification = localStorage.getItem("backendNotification");
+    if (storedNotification) {
+      setBackendNotification(storedNotification);
+      localStorage.removeItem("backendNotification");
+    }
+  }, []);
 
   // Load problems from memory
   useEffect(() => {
@@ -176,7 +186,14 @@ const HomePage = () => {
     };
 
     try {
+      setBackendNotification(null);
       await updateProblem(problemId, updatedProblem);
+      await resolveTelegramIssue(problemId).catch((error) => {
+        console.warn("Telegram resolve notification failed:", error);
+        setBackendNotification(
+          "Problem resolved locally, but Telegram backend could not be reached. Please check the backend service."
+        );
+      });
       await saveProblems(problems.map((item) => (item.id === problemId ? updatedProblem : item)));
       await addHistoryEntry(updatedProblem, "Resolved");
     } catch (error) {
@@ -316,6 +333,20 @@ const HomePage = () => {
   return (
     <>
       {/* Header */}
+      {backendNotification && (
+        <div
+          style={{
+            margin: "0 24px 16px",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            backgroundColor: "#fff4e5",
+            color: "#7a5200",
+            border: "1px solid #ffcc80",
+          }}
+        >
+          {backendNotification}
+        </div>
+      )}
       <div className="header">
         <div className="logo">
           <div className="logo-icon">
