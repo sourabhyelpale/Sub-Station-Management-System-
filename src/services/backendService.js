@@ -1,4 +1,6 @@
-const BACKEND_API_BASE = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+const BACKEND_API_BASE =
+  process.env.REACT_APP_BACKEND_URL ||
+  (process.env.NODE_ENV === "development" ? "http://localhost:5000" : "");
 
 const request = async (path, body) => {
   try {

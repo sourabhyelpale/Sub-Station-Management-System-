@@ -1,5 +1,4 @@
 {
-  "homepage": "https://sourabhyelpale.github.io/Sub-Station-Management-System-",
   "main": "electron.js",
   "version": "0.1.0",
   "private": true,

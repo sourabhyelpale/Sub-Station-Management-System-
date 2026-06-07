@@ -6,7 +6,7 @@ import RecordsPage from "./Pages/RecordsPage";
 
 function App() {
   return (
-    <BrowserRouter basename="/Sub-Station-Management-System-">
+    <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<LoginPage />} />
