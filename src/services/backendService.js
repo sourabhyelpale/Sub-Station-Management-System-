@@ -1,6 +1,5 @@
 const BACKEND_API_BASE =
-  process.env.REACT_APP_BACKEND_URL ||
-  (process.env.NODE_ENV === "development" ? "http://localhost:5000" : "");
+  process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
 
 const request = async (path, body) => {
   try {
@@ -18,7 +17,8 @@ const request = async (path, body) => {
     return response.json();
   } catch (error) {
     throw new Error(
-      error.message || "Unable to connect to the Telegram backend. Please ensure the backend is running."
+      error.message ||
+        "Unable to connect to the Telegram backend. Please ensure the backend is running."
     );
   }
 };

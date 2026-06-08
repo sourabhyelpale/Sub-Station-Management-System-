@@ -9,12 +9,15 @@ app.use(cors());
 app.use(express.json());
 
 app.post("/api/report", async (req, res) => {
-  const { issueId, division, subStation, feederType, trippingTime, reason } = req.body;
+  const { issueId, division, subStation, feederType, trippingTime, reason } =
+    req.body;
 
   if (!division || !subStation || !feederType || !trippingTime) {
-    return res.status(400).send(
-      "Invalid payload: division, subStation, feederType, and trippingTime are required."
-    );
+    return res
+      .status(400)
+      .send(
+        "Invalid payload: division, subStation, feederType, and trippingTime are required."
+      );
   }
 
   const issue = {
@@ -39,7 +42,10 @@ app.post("/api/report", async (req, res) => {
       telegramResult,
     });
   } catch (error) {
-    console.error("Telegram API error:", error.response ? error.response.data : error.message);
+    console.error(
+      "Telegram API error:",
+      error.response ? error.response.data : error.message
+    );
     const errorMessage =
       error.response && error.response.data
         ? JSON.stringify(error.response.data)

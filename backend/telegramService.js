@@ -13,7 +13,8 @@ const MAINTAINER_CHAT_IDS = String(TELEGRAM_CHAT_ID || "")
   .filter(Boolean);
 
 const SUPERVISOR_CHAT_ID = String(TELEGRAM_CHAT_ID_SUPERVISOR || "").trim();
-const TELEGRAM_DELAY_MS = Math.max(0, Number(TELEGRAM_DELAY_MINUTES)) * 60 * 1000;
+const TELEGRAM_DELAY_MS =
+  Math.max(0, Number(TELEGRAM_DELAY_MINUTES)) * 60 * 1000;
 
 const issueStore = new Map();
 
@@ -55,7 +56,11 @@ const buildTelegramMessage = (issue, escalation = false) => {
   ];
 
   if (escalation) {
-    lines.push(`\nThis issue is still open after ${safe(TELEGRAM_DELAY_MINUTES)} minutes.`);
+    lines.push(
+      `\nThis issue is still open after ${safe(
+        TELEGRAM_DELAY_MINUTES
+      )} minutes.`
+    );
   }
 
   return lines.join("\n");
@@ -98,7 +103,10 @@ const scheduleEscalation = (issueId) => {
       issue.escalatedAt = new Date().toISOString();
       issueStore.set(issueId, issue);
     } catch (error) {
-      console.error("Telegram escalation error:", error.response ? error.response.data : error.message);
+      console.error(
+        "Telegram escalation error:",
+        error.response ? error.response.data : error.message
+      );
     }
   }, TELEGRAM_DELAY_MS);
 };
