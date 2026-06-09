@@ -68,7 +68,7 @@ module.exports = async (req, res) => {
   ].join("\n");
 
   try {
-    const telegramResult = await axios.post(
+    const maintainerResult = await axios.post(
       `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         chat_id: assignedChatId,
@@ -82,13 +82,34 @@ module.exports = async (req, res) => {
       }
     );
 
+    let supervisorResult = null;
+    if (supervisorChatId && supervisorChatId !== assignedChatId) {
+      const response = await axios.post(
+        `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+        {
+          chat_id: supervisorChatId,
+          text: messageText,
+          parse_mode: "HTML",
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      supervisorResult = response.data;
+    }
+
     return res.status(200).json({
       success: true,
       issueId: issueId || `issue-${Date.now()}`,
       assignedMaintainerChatId: assignedChatId,
       escalationChatId: supervisorChatId || null,
       delayMinutes,
-      telegramResult: telegramResult.data,
+      telegramResult: {
+        maintainer: maintainerResult.data,
+        supervisor: supervisorResult,
+      },
     });
   } catch (error) {
     console.error("Telegram API error:", error.response ? error.response.data : error.message);

@@ -133,13 +133,24 @@ const reportIssue = async (issue) => {
 
   issueStore.set(issueCopy.issueId, issueCopy);
   const messageText = buildTelegramMessage(issueCopy, false);
-  const result = await sendTelegramMessage(assignedChatId, messageText);
+  const maintainerResult = await sendTelegramMessage(assignedChatId, messageText);
+  let supervisorResult = null;
+
+  if (SUPERVISOR_CHAT_ID && SUPERVISOR_CHAT_ID !== assignedChatId) {
+    supervisorResult = await sendTelegramMessage(SUPERVISOR_CHAT_ID, messageText);
+  }
 
   if (SUPERVISOR_CHAT_ID && TELEGRAM_DELAY_MS > 0) {
     scheduleEscalation(issueCopy.issueId);
   }
 
-  return { telegramResult: result, issue: issueCopy };
+  return {
+    telegramResult: {
+      maintainer: maintainerResult,
+      supervisor: supervisorResult,
+    },
+    issue: issueCopy,
+  };
 };
 
 const resolveIssue = (issueId) => {
