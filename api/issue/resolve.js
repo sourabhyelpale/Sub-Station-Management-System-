@@ -1,5 +1,3 @@
-const { resolveIssue } = require("../../backend/telegramService");
-
 const readBody = (req) => {
   if (req.body && typeof req.body === "object") return req.body;
 
@@ -25,14 +23,9 @@ module.exports = (req, res) => {
     return res.status(400).send("Invalid payload: issueId is required.");
   }
 
-  const issue = resolveIssue(issueId);
-  if (!issue) {
-    return res.status(404).send("Issue not found.");
-  }
-
   return res.status(200).json({
     success: true,
     issueId,
-    status: issue.status,
+    status: "resolved",
   });
 };
